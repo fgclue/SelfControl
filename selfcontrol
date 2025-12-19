@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+
+import argparse
+import texteditor
+import time
+import re
+import subprocess
+import sys
+from math import floor
+from pathlib import Path
+from os import makedirs, geteuid, environ
+from pwd import getpwuid
+
+def get_original_user_home():
+    uid = int(environ["PKEXEC_UID"])
+    return getpwuid(uid).pw_dir
+
+home = Path.home()
+
+if geteuid() == 0:
+    home = get_original_user_home()
+
+parser = argparse.ArgumentParser('SelfControl', 'selfcontrol [edit or a time format]', 'Control your time spent on useless websites')
+parser.add_argument('command', help='formatted time (example: 30, maximum 24h) or edit to edit your domains')
+
+args = parser.parse_args()
+
+root = Path(home) / ".config/slipperyslope/"
+config = root / "domains"
+
+makedirs(root, exist_ok=True)
+
+if not config.exists():
+    open(config, 'a').close()
+
+FILE_HEADER = """
+# selfcontrol START {{start_time}}
+{{hosts}}
+# selfcontrol END {{end_time}}
+"""
+
+hosts = ""
+
+if args.command == 'edit':
+    texteditor.open(filename=config)
+    exit(0)
+
+with open(config) as hosts_file:
+    for line in hosts_file:
+        hosts += "127.0.0.1 " + line
+        hosts += "127.0.0.1 " + "www." + line
+    
+    hosts = hosts.strip()
+
+UNIT_SECONDS = {
+    's': 1, 'sec': 1, 'secs': 1, 'second': 1, 'seconds': 1,
+    'm': 60, 'min': 60, 'mins': 60, 'minute': 60, 'minutes': 60,
+    'h': 3600, 'hr': 3600, 'hrs': 3600, 'hour': 3600, 'hours': 3600,
+    'd': 86400, 'day': 86400, 'days': 86400,
+    'w': 604800, 'week': 604800, 'weeks': 604800,
+    'ms': 0.001
+}
+
+def to_seconds(text: str) -> int:
+    total = float(0)
+    for value, unit in re.findall(r'(\d+(?:\.\d+)?)\s*([a-zA-Z]+)', text):
+        unit = unit.lower()
+        if unit not in UNIT_SECONDS:
+            raise ValueError(f"Unknown unit: {unit}")
+        total += float(value) * UNIT_SECONDS[unit]
+    return int(total)
+
+def seconds_to_text(seconds: int) -> str:
+    units = [
+        ("year",   31536000),
+        ("day",     86400),
+        ("hour",     3600),
+        ("minute",     60),
+        ("second",      1),
+    ]
+
+    seconds = int(seconds)
+    parts = []
+
+    for name, size in units:
+        if seconds >= size:
+            value, seconds = divmod(seconds, size)
+            parts.append(f"{value} {name}{'' if value == 1 else 's'}")
+
+    return " ".join(parts) if parts else "0 seconds"
+
+start_time = floor(time.time())
+end_time = start_time + floor(to_seconds(args.command))
+
+result = (FILE_HEADER
+    .replace('{{hosts}}', hosts)
+    .replace('{{start_time}}', str(start_time))
+    .replace('{{end_time}}', str(end_time))
+    .strip() + "\n")
+
+
+def extract_times(hosts: str):
+    stored_start_time = None
+    stored_end_time = None
+
+    m = re.search(r'^#\s*selfcontrol START\s+(.+)$', hosts, re.MULTILINE)
+    if m:
+        stored_start_time = m.group(1).strip()
+
+    m = re.search(r'^#\s*selfcontrol END\s+(.+)$', hosts, re.MULTILINE)
+    if m:
+        stored_end_time = m.group(1).strip()
+
+    return stored_start_time, stored_end_time
+
+def remove_block(hosts: str) -> str:
+    return re.sub(
+        r'#\s*selfcontrol START.*?#\s*selfcontrol END\s+\d+\n?',
+        '',
+        hosts,
+        flags=re.DOTALL
+    )
+
+
+def test_hosts_file():
+    with open("/etc/hosts", "r") as f:
+        hosts = f.read()
+
+    if "# selfcontrol " in hosts:
+        _, stored_end_time = extract_times(hosts)
+        if floor(time.time()) >= int(stored_end_time): 
+            if geteuid() == 0:
+                pass
+            else:
+                print("Turning off block.")
+                print("Please escalate:")
+                try: subprocess.check_call([
+                    "pkexec",
+                    sys.executable,
+                    __file__,
+                    ' '.join(sys.argv[1:])
+                ])
+                except: 
+                    print("Try again.")
+                    exit(1)
+                exit(0)
+            
+            Path("/etc/hosts").write_text(remove_block(hosts))
+            print("Unblocked! You may now browse the web freely!")
+            exit(0)
+            
+        print("Please do not be impatient.", seconds_to_text(int(stored_end_time) - floor(time.time())), "left")
+        exit(0)
+
+def create_hosts_file():
+    with open("/etc/hosts", "a") as f:
+        print("Starting block lasting", seconds_to_text(end_time - start_time) + ".")
+        print("Warning: YOU SHOULD RESTART YOUR BROWSER! (then press Ctrl+Shift+T)")
+        f.write(result)
+
+test_hosts_file()
+
+if geteuid() == 0:
+    create_hosts_file()
+    pass
+else:
+    try: subprocess.check_call([
+        "pkexec",
+        sys.executable,
+        __file__,
+        ' '.join(sys.argv[1:])
+    ])
+    except: exit(1)
+    exit(0)
