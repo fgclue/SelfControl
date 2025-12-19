@@ -1,0 +1,94 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $BlockedWindow: Adw.ApplicationWindow {
+  title: _("SelfControl");
+
+  Box blocked {
+    orientation: vertical;
+    valign: center;
+    halign: center;
+    spacing: 30;
+
+    Label {
+      label: _("Blocked");
+      margin-bottom: 30;
+
+      styles [
+        "title-1",
+      ]
+    }
+
+    Button block {
+      label: _("Try Unlocking");
+      clicked => $blocked_clicked();
+
+      styles [
+        "pill",
+        "suggested-action",
+      ]
+    }
+  }
+}
+
+Adw.Dialog dialog {
+  can-close: true;
+
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    Box {
+      orientation: vertical;
+      halign: center;
+      spacing: 10;
+      margin-bottom: 20;
+      margin-end: 20;
+      margin-start: 20;
+      margin-top: 0;
+
+      Label {
+        label: _("Unblocked");
+
+        styles [
+          "title-1",
+        ]
+      }
+
+      Label {
+        label: _("You may now browse the web freely.");
+      }
+    }
+  }
+}
+
+Adw.Dialog failed {
+  can-close: true;
+
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    Box {
+      orientation: vertical;
+      halign: center;
+      spacing: 10;
+      margin-bottom: 20;
+      margin-end: 20;
+      margin-start: 20;
+      margin-top: 0;
+
+      Label {
+        label: _("Blocked");
+
+        styles [
+          "title-1",
+        ]
+      }
+
+      Label {
+        label: _("Try again later.");
+      }
+    }
+  }
+}

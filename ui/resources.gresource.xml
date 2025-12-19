@@ -1,0 +1,6 @@
+<gresources>
+  <gresource prefix="/nl/biitle/SelfControl">
+    <file>generated/window.ui</file>
+    <file>generated/blocked.ui</file>
+  </gresource>
+</gresources>

@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+import gi # type: ignore
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
+from gi.repository import Gtk, Adw # type: ignore
+from gi.repository import Gio, Gdk # type: ignore
+
+from subprocess import Popen, check_output
+
+SF_PATH = '/home/lost/playground/sideprojects/SelfControl/selfcontrol'
+
+
+resource = Gio.Resource.load(__file__.removesuffix('selfcontrol-ui') + "generated/resources.gresource")
+Gio.Resource._register(resource)
+
+@Gtk.Template(resource_path='/nl/biitle/SelfControl/generated/window.ui')
+class SelfControlWindow(Adw.ApplicationWindow):
+    __gtype_name__ = 'SelfControlWindow'
+
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_data(b'.num {font-size: 50px;}')
+    Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    edit = Gtk.Template.Child()
+    start = Gtk.Template.Child()
+
+    hours = Gtk.Template.Child()
+    minutes = Gtk.Template.Child()
+    seconds = Gtk.Template.Child()
+
+    @Gtk.Template.Callback()
+    def edit_clicked(self, *args, **kwargs):
+        Popen(['kgx', '-e', SF_PATH, 'edit'])
+
+    @Gtk.Template.Callback()
+    def start_clicked(self, *args, **kwargs):
+        exec = [SF_PATH,
+                str(self.hours.get_value_as_int()) + 'h'
+                + str(self.minutes.get_value_as_int()) + 'm'
+                + str(self.seconds.get_value_as_int()) + 's']
+        Popen(exec)
+        exit()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+@Gtk.Template(resource_path='/nl/biitle/SelfControl/generated/blocked.ui')
+class BlockedWindow(Adw.ApplicationWindow):
+    __gtype_name__ = 'BlockedWindow'
+
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_data(b'.num {font-size: 50px;}')
+    Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    block = Gtk.Template.Child()
+    dialog = Gtk.Template.Child()
+    failed = Gtk.Template.Child()
+
+    @Gtk.Template.Callback()
+    def blocked_clicked(self, *args):
+        output = check_output([SF_PATH, 'check'])
+        if 'Unblocked' in output.decode():
+            self.dialog.present(self)
+            exit()
+        else:
+            self.failed.present(self)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+class SelfControlApp(Adw.Application):
+    def __init__(self):
+        super().__init__(
+            application_id="nl.biitle.SelfControl",
+        )
+
+    def do_activate(self):
+        if "# selfcontrol START" in open("/etc/hosts", "r").read():
+            win = BlockedWindow(application=self)
+        else:
+            win = SelfControlWindow(application=self)
+        win.set_default_size(150, 700)
+        win.present()
+
+def main():
+    app = SelfControlApp()
+    app.run(None)
+
+if __name__ == "__main__":
+    main()

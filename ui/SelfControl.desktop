@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=SelfControl
+Comment=
+Exec=/home/lost/playground/sideprojects/SelfControl/ui/selfcontrol-ui
+Icon=/home/lost/playground/sideprojects/SelfControl/ui/icon.png
+Terminal=False

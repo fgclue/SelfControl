@@ -1,0 +1,113 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $SelfControlWindow: Adw.ApplicationWindow {
+  title: _("SelfControl");
+
+  Box selfcontrol {
+    orientation: vertical;
+    valign: center;
+    halign: center;
+    spacing: 30;
+
+    Box {
+      halign: center;
+      spacing: 6;
+
+      SpinButton hours {
+        halign: center;
+        orientation: vertical;
+        wrap: true;
+        value: 0;
+        climb-rate: 1;
+
+        styles [
+          "num",
+        ]
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 23;
+          step-increment: 1;
+          value: 0;
+        };
+      }
+
+      Label {
+        label: ":";
+
+        styles [
+          "num",
+        ]
+      }
+
+      SpinButton minutes {
+        halign: center;
+        orientation: vertical;
+        wrap: true;
+        climb-rate: 1;
+
+        styles [
+          "num",
+        ]
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 59;
+          step-increment: 1;
+          value: 0;
+        };
+      }
+
+      Label {
+        label: ":";
+
+        styles [
+          "num",
+        ]
+      }
+
+      SpinButton seconds {
+        halign: center;
+        orientation: vertical;
+        wrap: true;
+        climb-rate: 1;
+
+        styles [
+          "num",
+        ]
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 59;
+          step-increment: 1;
+          value: 0;
+        };
+      }
+    }
+
+    Box {
+      orientation: vertical;
+      valign: center;
+      halign: center;
+      spacing: 5;
+
+      Button edit {
+        name: "edit";
+        label: _("Edit Blocklist");
+        clicked => $edit_clicked();
+      }
+
+      Button start {
+        name: "start";
+        label: _("Start Block");
+
+        styles [
+          "suggested-action",
+        ]
+
+        clicked => $start_clicked();
+      }
+    }
+  }
+}
