@@ -10,6 +10,9 @@ from math import floor
 from pathlib import Path
 from os import makedirs, geteuid, environ
 from pwd import getpwuid
+from sys import platform
+
+HOSTS = 'C:\\Windows\\System32\\Drivers\\etc\\hosts' if platform == 'win32' else '/etc/hosts'
 
 def get_original_user_home():
     uid = int(environ["PKEXEC_UID"])
@@ -123,7 +126,7 @@ def remove_block(hosts: str) -> str:
 
 
 def test_hosts_file():
-    with open("/etc/hosts", "r") as f:
+    with open("HOSTS", "r") as f:
         hosts = f.read()
 
     if "# selfcontrol " in hosts:
@@ -145,7 +148,7 @@ def test_hosts_file():
                     exit(1)
                 exit(0)
             
-            Path("/etc/hosts").write_text(remove_block(hosts))
+            Path("HOSTS").write_text(remove_block(hosts))
             print("Unblocked! You may now browse the web freely!")
             exit(0)
             
@@ -153,7 +156,7 @@ def test_hosts_file():
         exit(0)
 
 def create_hosts_file():
-    with open("/etc/hosts", "a") as f:
+    with open("HOSTS", "a") as f:
         print("Starting block lasting", seconds_to_text(end_time - start_time) + ".")
         print("Warning: YOU SHOULD RESTART YOUR BROWSER! (then press Ctrl+Shift+T)")
         f.write(result)
