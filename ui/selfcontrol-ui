@@ -9,7 +9,7 @@ from gi.repository import Gio, Gdk # type: ignore
 
 from subprocess import Popen, check_output
 
-SF_PATH = '/home/lost/playground/sideprojects/SelfControl/selfcontrol'
+SF_PATH = __file__.removesuffix('ui/selfcontrol-ui') + 'selfcontrol'
 
 
 resource = Gio.Resource.load(__file__.removesuffix('selfcontrol-ui') + "generated/resources.gresource")
