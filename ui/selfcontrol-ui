@@ -60,10 +60,12 @@ class BlockedWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def blocked_clicked(self, *args):
-        output = check_output([SF_PATH, 'check'])
-        if 'Unblocked' in output.decode():
+        output = check_output([SF_PATH, 'uicheck'])
+        if 'unblocked' in output.decode():
             self.dialog.present(self)
-            exit()
+            result = check_output([SF_PATH, 'check'])
+            if 'try again' not in result.decode():
+                exit()
         else:
             self.failed.present(self)
 

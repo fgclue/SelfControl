@@ -24,7 +24,7 @@ if geteuid() == 0:
     home = get_original_user_home()
 
 parser = argparse.ArgumentParser('SelfControl', 'selfcontrol [edit or a time format]', 'Control your time spent on useless websites')
-parser.add_argument('command', help='formatted time (example: 30, maximum 24h) or edit to edit your domains')
+parser.add_argument('command', help='formatted time (example: 30, maximum 24h)|edit|uicheck')
 
 args = parser.parse_args()
 
@@ -47,6 +47,7 @@ hosts = ""
 if args.command == 'edit':
     texteditor.open(filename=config)
     exit(0)
+
 
 with open(config) as hosts_file:
     for line in hosts_file:
@@ -92,6 +93,25 @@ def seconds_to_text(seconds: int) -> str:
 
     return " ".join(parts) if parts else "0 seconds"
 
+def computer_readable_time(seconds: int) -> str:
+    units = [
+        ("y",   31536000),
+        ("d",     86400),
+        ("h",     3600),
+        ("m",     60),
+        ("s",      1),
+    ]
+
+    seconds = int(seconds)
+    parts = []
+
+    for name, size in units:
+        if seconds >= size:
+            value, seconds = divmod(seconds, size)
+            parts.append(f"{value}{name}")
+
+    return "".join(parts) if parts else "0 seconds"
+
 start_time = floor(time.time())
 end_time = start_time + floor(to_seconds(args.command))
 
@@ -114,7 +134,20 @@ def extract_times(hosts: str):
     if m:
         stored_end_time = m.group(1).strip()
 
-    return stored_start_time, stored_end_time
+    return stored_start_time or 0, stored_end_time or 0
+
+if args.command == 'uicheck':
+    with open(HOSTS, "r") as f:
+        hosts = f.read()
+
+    start_time, end_time = extract_times(hosts)
+
+    blocked = not int(int(end_time) - time.time()) < 0
+    if blocked:
+        print(blocked, computer_readable_time(int(int(end_time) - time.time())))
+    else:
+        print("unblocked")
+    exit(0)
 
 def remove_block(hosts: str) -> str:
     return re.sub(
